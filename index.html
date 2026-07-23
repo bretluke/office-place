@@ -2931,7 +2931,7 @@ window.peerJSReady = (function loadPeer() {
 //   MAJOR = breaking change to office state / save format
 //   MINOR = new feature (sprint, radio, video, etc.)
 //   PATCH = bug fixes, copy tweaks, polish
-const BUILD_VERSION = '0.12.0';
+const BUILD_VERSION = '0.12.1';
 
 // ---------- WORLD CONFIG ----------
 const WORLD = {
@@ -4529,24 +4529,34 @@ class RadioManager {
     }
   }
 
+  // First-time default for the per-listener volume slider. New users
+  // walking into a room where music is playing should hear it at a
+  // moderate level rather than at max — 25% keeps it audible but not
+  // startling. Anyone who's already adjusted the slider has their
+  // stored preference respected (no retroactive changes).
+  //
+  // Applies to all speakers in the office. Not synced across peers —
+  // this is purely each listener's own starting volume.
+  static DEFAULT_PERSONAL_VOLUME = 0.25;
+
   _personalVolumeKey(radioId) {
     return `bcg-office:radio-vol:${radioId}`;
   }
   _loadPersonalVolume(radioId) {
     try {
       const raw = localStorage.getItem(this._personalVolumeKey(radioId));
-      if (raw === null) return 1.0;
+      if (raw === null) return RadioManager.DEFAULT_PERSONAL_VOLUME;
       const v = parseFloat(raw);
-      if (!isFinite(v)) return 1.0;
+      if (!isFinite(v)) return RadioManager.DEFAULT_PERSONAL_VOLUME;
       return Math.max(0, Math.min(1, v));
-    } catch (e) { return 1.0; }
+    } catch (e) { return RadioManager.DEFAULT_PERSONAL_VOLUME; }
   }
   _savePersonalVolume(radioId, v) {
     try { localStorage.setItem(this._personalVolumeKey(radioId), String(v)); } catch (e) {}
   }
 
   getPersonalVolume(radioId) {
-    return this.personalVolume.get(radioId) ?? 1.0;
+    return this.personalVolume.get(radioId) ?? RadioManager.DEFAULT_PERSONAL_VOLUME;
   }
   setPersonalVolume(radioId, v) {
     const clamped = Math.max(0, Math.min(1, +v || 0));
